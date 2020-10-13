@@ -17,16 +17,16 @@ notes
 def gen_memstore(dst_offset,bytes_):
   idx = 0
   if len(bytes_)<32:
-    print("ERROR gen_copy() len_ is ",len_)
+    print("ERROR gen_copy() fewer than 32 bytes needs special handling, len_ is only ",len_)
     return
   while idx<len(bytes_)-32:
-    print("0x"+bytes_[idx:idx+32].hex())
-    print(hex(dst_offset))
+    print("0x"+bytes_[idx:idx+32].hex(),end=' ')
+    print(hex(dst_offset),end=' ')
     print("mstore")
     dst_offset+=32
     idx+=32
-  print("0x"+bytes_[-32:].hex())
-  print(hex(dst_offset+len(bytes_)-32))
+  print("0x"+bytes_[-32:].hex(),end=' ')
+  print(hex(dst_offset+len(bytes_[idx:])-32),end=' ')
   print("mstore")
 
 def gen_memcopy(dst_offset,src_offset,len_):
@@ -72,31 +72,6 @@ def gen_isNonzero(offset,len_):
     print("add")
 
 
-def gen_bit_iter():
-  """
-  push 0xblah	// bits we are iterating over
-  jumpdest	// bit iter func, top of stack must be the bits we are iterating over
-  push 0x1	// mask to isolate rightmost bit
-  push 0x0	// loop variable, what we shift by
-  jumpdest	// start bit iter loop
-  dup1 dup1	// stack: [... <val to shift> <numbits to shift by>]
-  shr
-  dup2 and	// apply mask
-  0x1 sub	// top of stack is 1 if igore, zero if must do
-  // if not zero, addmod384, else jump forward
-  0x
-  0x<location of start bit iter loop> mul
-  add jump
-  // double
-  jumpdest	// after 
-  
-  
-  jump <start of loop or forward by one>
-  jumpdest
-  """
-  pass
-
-
 
 ###########
 # Constants
@@ -130,10 +105,53 @@ buffer_offset += 14*3*96
 buffer_Edouble = buffer_offset	# 7 or 6 values
 buffer_offset += 7*3*96
 buffer_inputs = buffer_offset
-buffer_offset += 3*48+3*96
+buffer_offset += 2*48+2*96
 buffer_output = buffer_offset
 buffer_offset += 12*48
 
+
+
+def gen_test_case_values():
+  if 0:
+    # test from https://tools.ietf.org/id/draft-yonezawa-pairing-friendly-curves-02.html#rfc.appendix.B
+    # Input x,y values:
+    inE1  = bytearray.fromhex("120177419e0bfb75edce6ecc21dbf440f0ae6acdf3d0e747154f95c7143ba1c17817fc679976fff55cb38790fd530c16")[::-1]
+    inE1  += bytearray.fromhex("0e44d2ede97744303cff1b76964b531712caf35ba344c12a89d7738d9fa9d05592899ce4383b0270ff526c2af318883a")[::-1]
+    gen_memstore(buffer_inputs,inE1)
+    # Input x’0,x'1 value:
+    inE2 = bytearray.fromhex("058191924350bcd76f67b7631863366b9894999d1a3caee9a1a893b53e2ae580b3f5fb2687b4961af5f28fa202940a10")[::-1] 
+    inE2 += bytearray.fromhex("11922a097360edf3c2b6ed0ef21585471b1ab6cc8541b3673bb17e18e2867806aaa0c59dbccd60c3a5a9c0759e23f606")[::-1] 
+    # Input y’0,y'1 value:
+    inE2 += bytearray.fromhex("197d145bbaff0bb54347fe40525c8734a887959b8577c95f7f4a4d344ca692c9c52f05df531d63a56d8bf5079fb65e61")[::-1] 
+    inE2 += bytearray.fromhex("0ed54f48d5a1caa764044f659f0ee1e9eb2def362a476f84e0832636bacc0a840601d8f4863f9e230c3e036d209afa4e")[::-1] 
+    gen_memstore(buffer_inputs+96,inE2)
+  if 0:
+    print()
+    # these are the identity elements, copied from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2539.md#specification
+    # G1:
+    inE1  = bytearray.fromhex("008848defe740a67c8fc6225bf87ff5485951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef")[::-1]
+    inE1  += bytearray.fromhex("01914a69c5102eff1f674f5d30afeec4bd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6")[::-1]
+    gen_memstore(buffer_inputs,inE1)
+    # G2:
+    inE2 = bytearray.fromhex("018480be71c785fec89630a2a3841d01c565f071203e50317ea501f557db6b9b71889f52bb53540274e3e48f7c005196")[::-1] 
+    inE2 += bytearray.fromhex("00ea6040e700403170dc5a51b1b140d5532777ee6651cecbe7223ece0799c9de5cf89984bff76fe6b26bfefa6ea16afe")[::-1] 
+    inE2 += bytearray.fromhex("00690d665d446f7bd960736bcbb2efb4de03ed7274b49a58e458c282f832d204f2cf88886d8c7c2ef094094409fd4ddf")[::-1] 
+    inE2 += bytearray.fromhex("00f8169fd28355189e549da3151a70aa61ef11ac3d591bf12463b01acee304c24279b83f5e52270bd9a1cdd185eb8f93")[::-1] 
+    gen_memstore(buffer_inputs+96,inE2)
+  if 1:
+    print()
+    # these are from wasmsnark
+    # cd wasmsnark && ~/repos/node/node-v12.18.4-linux-x64/bin/npx mocha test/bls12381.js
+    # G1:
+    inE1  = bytearray.fromhex("0f81da25ecf1c84b577fefbedd61077a81dc43b00304015b2b596ab67f00e41c86bb00ebd0f90d4b125eb0539891aeed")[::-1]
+    inE1  += bytearray.fromhex("11af629591ec86916d6ce37877b743fe209a3af61147996c1df7fd1c47b03181cd806fd31c3071b739e4deb234bd9e19")[::-1]
+    gen_memstore(buffer_inputs,inE1)
+    # G2:
+    inE2 = bytearray.fromhex("024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8")[::-1] 
+    inE2 += bytearray.fromhex("13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e")[::-1] 
+    inE2 += bytearray.fromhex("0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801")[::-1] 
+    inE2 += bytearray.fromhex("0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be")[::-1] 
+    gen_memstore(buffer_inputs+96,inE2)
 
 # for counting number of operations
 addmod384_count=0
@@ -191,6 +209,15 @@ def gen_fmul(f,out,x,y,mod):
   if f=="f1":
     gen_f1mul(out,x,y,mod)
 
+def gen_fsqr(f,out,x,mod):
+  if f=="f12":
+    gen_f12sqr(out,x,mod)
+  if f=="f6":
+    gen_f6sqr(out,x,mod)
+  if f=="f2":
+    gen_f2sqr(out,x,mod)
+  if f=="f1":
+    gen_f1sqr(out,x,mod)
 
 # f1
 
@@ -212,7 +239,7 @@ def gen_f1neg(out,x,mod):
 
 def gen_f1reciprocal(out_offset,in_offset,mod):
   pass
-  #for bit in bin(bls12_384_prime-2)[2]:
+  #for bit in bin(mod-2)[2]:
   #  if bit:
 
 
@@ -261,34 +288,90 @@ def gen_f2mul(out,x,y,mod):
   tmp1 = buffer_f2mul
   tmp2 = tmp1+48
   tmp3 = tmp2+48
-  # tmp1 = x0*y0
-  gen_f1mul(tmp1,x0,y0,mod)
-  # tmp2 = x1*y1
-  gen_f1mul(tmp2,x1,y1,mod)
-  # tmp3 = zero-tmp2
-  gen_f1sub(tmp3,f2zero,tmp2,mod)
-  # out0 = tmp1+tmp3
-  gen_f1add(tmp3,f2zero,y1,mod)
-  # tmp1 = tmp1+tmp2
-  gen_f1add(tmp1,tmp1,tmp2,mod)
-  # tmp2 = x0+x1
-  gen_f1add(tmp2,x0,x1,mod)
-  # tmp3 = y0+y1
-  gen_f1add(tmp3,y0,y1,mod)
-  # tmp2 = tmp2*tmp3
-  gen_f1mul(tmp2,tmp2,tmp3,mod)
-  # out1 = tmp2-tmp1
-  gen_f1sub(out1,tmp2,tmp1,mod)
+  """
+  tmp1 = x0*y0
+  tmp2 = x1*y1
+  tmp3 = zero-tmp2
+  out0 = tmp1+tmp3
+  tmp1 = tmp1+tmp2
+  tmp2 = x0+x1
+  tmp3 = y0+y1
+  tmp2 = tmp2*tmp3
+  out1 = tmp2-tmp1
+  """
+  if 0:
+    gen_f1mul(tmp1,x0,y0,mod)
+    gen_f1mul(tmp2,x1,y1,mod)
+    #gen_f1sub(tmp3,zero,tmp2,mod)
+    #gen_f1add(out0,tmp1,tmp3,mod)
+    gen_f1sub(out0,tmp1,tmp2,mod)		# above sub,add give same result as just this sub
+    gen_f1mul(tmp1,x0,y1,mod)
+    gen_f1mul(tmp2,x1,y0,mod)
+    gen_f1add(out1,tmp1,tmp2,mod)
+  elif 1:
+    gen_f1mul(tmp1,x0,y0,mod)
+    gen_f1mul(tmp2,x1,y1,mod)
+    #gen_f1sub(tmp3,zero,tmp2,mod)
+    #gen_f1add(out0,tmp1,tmp3,mod)
+    gen_f1sub(out0,tmp1,tmp2,mod)		# above sub,add give same result as just this sub
+    gen_f1add(tmp1,tmp1,tmp2,mod)
+    gen_f1add(tmp2,x0,x1,mod)
+    gen_f1add(tmp3,y0,y1,mod)
+    gen_f1mul(tmp2,tmp2,tmp3,mod)
+    gen_f1sub(out1,tmp2,tmp1,mod)
+  elif 0:
+    gen_f1mul(tmp1,x0,y0,mod)			# t1 = x0*y0
+    gen_f1sub(tmp2,zero,x1,mod)			# t2 = -x1
+    gen_f1mul(tmp2,tmp2,y1,mod)			# t2 = -x1*y1
+    gen_f1add(out0,tmp1,tmp2,mod)		# out0 = t1+t2
+    gen_f1add(tmp3,x0,x1,mod)			# t3 = x0+y0
+    gen_f1add(out1,y0,y1,mod)			# out1 = x1+y1
+    gen_f1mul(out1,out1,tmp3,mod)		# out1 = out1*t3
+    gen_f1sub(out1,out1,tmp1,mod)		# out1 = out1-t1
+    gen_f1add(out1,out1,tmp2,mod)		# out1 = out1+t2
+  elif 0:
+    gen_f1mul(tmp1,x0,y0,mod)                   # t1 = x0*y0
+    gen_f1mul(tmp2,x1,y1,mod)                 # t2 = x1*y1
+    gen_f1sub(out0,tmp1,tmp2,mod)               # out0 = t1-t2
+    gen_f1add(tmp3,x0,x1,mod)                   # t3 = x0+y0
+    gen_f1add(out1,y0,y1,mod)                   # out1 = x1+y1
+    gen_f1mul(out1,out1,tmp3,mod)               # out1 = out1*t3
+    gen_f1sub(out1,out1,tmp1,mod)               # out1 = out1-t1
+    gen_f1sub(out1,out1,tmp2,mod)               # out1 = out1-t2
+
+
 
 def gen_f2sqr(out,x,mod):
-  gen_f2mul(out,x,x,mod)	# TODO: optimize
+  global f2mul_count
+  f2mul_count+=1
+  print("// f2sqr")
+  if 0:
+    gen_f2mul(out,x,x,mod)
+  else:
+    # get offsets
+    x0 = x
+    x1 = x+48
+    out0 = out
+    out1 = out+48
+    tmp0 = buffer_f2mul
+    tmp1 = tmp0+48
+    gen_f1add(tmp0,x0,x1,mod)
+    gen_f1sub(tmp1,x0,x1,mod)
+    gen_f1mul(out1,x0,x1,mod)
+    gen_f1add(out1,out1,out1,mod)
+    gen_f1mul(out0,tmp0,tmp1,mod)
+  
 
 def gen_f2neg(out,in_,mod):
-  gen_f2sub(out,zero,in_,mod)
+  #gen_f2sub(out,zero,in_,mod)
+  gen_f1sub(out,mod,in_,mod)
+  gen_f1sub(out+48,mod,in_+48,mod)
 
 def gen_mul_by_u_plus_1_fp2(out,x,mod):
-  gen_f1sub(out, x, x+48, mod)
+  t = buffer_f2mul	# to prevent clobbering
+  gen_f1sub(t, x, x+48, mod)
   gen_f1add(out+48, x, x+48, mod)
+  gen_memcopy(out,t,48)
 
 
 # f6
@@ -299,13 +382,13 @@ def gen_f6add(out,x,y,mod):
   print("// f6 add")
   x0 = x
   x1 = x0+96
-  x2 = x1+192
+  x2 = x1+96
   y0 = y
   y1 = y0+96
-  y2 = y1+192
+  y2 = y1+96
   out0 = out
   out1 = out0+96
-  out2 = out1+192
+  out2 = out1+96
   gen_f2add(out0,x0,y0,mod)
   gen_f2add(out1,x1,y1,mod)
   gen_f2add(out2,x2,y2,mod)
@@ -316,19 +399,29 @@ def gen_f6sub(out,x,y,mod):
   print("// f6 sub")
   x0 = x
   x1 = x0+96
-  x2 = x1+192
+  x2 = x1+96
   y0 = y
   y1 = y0+96
-  y2 = y1+192
+  y2 = y1+96
   out0 = out
   out1 = out0+96
-  out2 = out1+192
+  out2 = out1+96
   gen_f2sub(out0,x0,y0,mod)
   gen_f2sub(out1,x1,y1,mod)
   gen_f2sub(out2,x2,y2,mod)
 
 def gen_f6neg(out,x,mod):
-  gen_f6sub(out,f6zero,x,mod)
+  #gen_f6sub(out,f6zero,x,mod)
+  #gen_f6sub(out,mod,x,mod)
+  x0=x
+  x1=x0+96
+  x2=x1+96
+  out0=out
+  out1=out0+96
+  out2=out1+96
+  gen_f2neg(out0,x0,mod)
+  gen_f2neg(out1,x1,mod)
+  gen_f2neg(out2,x2,mod)
 
 def gen_f6mul(out,x,y,mod):
   global f6mul_count
@@ -361,7 +454,7 @@ def gen_f6mul(out,x,y,mod):
   gen_f2sub(t3,t3,t1,mod)
   gen_f2sub(t3,t3,t2,mod)
   gen_mul_by_u_plus_1_fp2(t3,t3,mod)
-  gen_f2add(out0,t3,t0,mod)
+  #gen_f2add(out0,t3,t0,mod)	# below
   # out1
   gen_f2add(t4,x0,x1,mod)
   gen_f2add(t5,y0,y1,mod)
@@ -377,6 +470,8 @@ def gen_f6mul(out,x,y,mod):
   gen_f2sub(out2,out2,t0,mod)
   gen_f2sub(out2,out2,t2,mod)
   gen_f2add(out2,out2,t1,mod)
+
+  gen_f2add(out0,t3,t0,mod)
 
 def gen_f6sqr(out,x,mod):
   gen_f6mul(out,x,x,mod)	# TODO: optimize
@@ -419,47 +514,98 @@ def gen_f12mul(out,x,y,mod):
   y0 = y
   y1 = y0+288
   out0 = out
-  out00 = out+0
-  out01 = out+96
-  out02 = out+192
+  out00 = out0
+  out01 = out00+96
+  out02 = out01+96
   out1 = out0+288
   # temporary variables
   t0 = buffer_f12mul
   t00 = t0
-  t01 = t0+96
-  t02 = t0+192
+  t01 = t00+96
+  t02 = t01+96
   t1 = t0+288
   t10 = t1
-  t11 = t1+96
-  t12 = t1+192
-  t2 = t1+576
+  t11 = t10+96
+  t12 = t11+96
+  t2 = t1+288
+  # debugging
+  gen_f6mul(out0,x0,y0,mod)
+  gen_f6mul(out1,x1,y1,mod)
   gen_f6mul(t0,x0,y0,mod)
   gen_f6mul(t1,x1,y1,mod)
   # out1
   gen_f6add(t2,x0,x1,mod)
-  gen_f6add(out1,x0,x1,mod)
+  gen_f6add(out1,y0,y1,mod)
   gen_f6mul(out1,out1,t2,mod)
   gen_f6sub(out1,out1,t0,mod)
   gen_f6sub(out1,out1,t1,mod)
   # out0
-  gen_mul_by_u_plus_1_fp2(t2,t12,mod)	# clobbers, so use temp
-  gen_memcopy(t12,t2,96)		# since above clobbers
+  gen_mul_by_u_plus_1_fp2(t12,t12,mod)
   gen_f2add(out00,t00,t12,mod)
   gen_f2add(out01,t01,t10,mod)
   gen_f2add(out02,t02,t11,mod)
 
 def gen_f12sqr(out,x,mod):
-  gen_f12mul(out,x,x,mod)		# TODO: optimize
+  #gen_f12mul(out,x,x,mod)		# TODO: optimize
+  print("// f12 sqr")
+  x0 = x
+  x00 = x0
+  x01 = x00+96
+  x02 = x01+96
+  x1 = x0+288
+  x10 = x1
+  x11 = x10+96
+  x12 = x11+96
+  out0 = out
+  out00 = out0
+  out01 = out00+96
+  out02 = out01+96
+  out1 = out0+288
+  # temporary variables
+  t0 = buffer_f12mul
+  t00 = t0
+  t01 = t00+96
+  t02 = t01+96
+  t1 = t0+288
+  t10 = t1
+  t11 = t10+96
+  t12 = t11+96
+
+
+  gen_f6add(t0,x0,x1,mod)
+
+  # debugging
+  #gen_memcopy(out0,t0,288)
+  #gen_memcopy(out1,t0,288)
+
+  gen_mul_by_u_plus_1_fp2(t12,x12,mod)
+  gen_f2add(t10,x00,t12,mod)
+  gen_f2add(t11,x01,x10,mod)
+  gen_f2add(t12,x02,x11,mod)
+  
+
+  gen_f6mul(t0,t0,t1,mod)
+  gen_f6mul(t1,x0,x1,mod)
+
+  gen_f6add(out1,t1,t1,mod)
+
+  gen_f6sub(out0,t0,t1,mod)
+ 
+  gen_mul_by_u_plus_1_fp2(t12,t12,mod)
+  gen_f2sub(out00,out00,t12,mod)
+  gen_f2sub(out01,out01,t10,mod)
+  gen_f2sub(out02,out02,t11,mod)
+
 
 def gen_f12_conjugate(x,mod):
-  x1 = x+96
+  x1 = x+288
   gen_f6neg(x1,x1,mod)
 
 
 # f6 and f12 optimizations for custom operations
 
 def gen_mul_by_0y0_fp6(out,x,y,mod):
-  # x is f6, y is f2
+  # out is f6, x is f6, y is f2
   x0 = x
   x1 = x0+96
   x2 = x1+96
@@ -475,7 +621,7 @@ def gen_mul_by_0y0_fp6(out,x,y,mod):
   gen_mul_by_u_plus_1_fp2(out0,t,mod)
   
 def gen_mul_by_xy0_fp6(out,x,y,mod):
-  # x is f6, y is f6
+  # out if f6, x is f6, y is f6
   x0 = x
   x1 = x0+96
   x2 = x1+96
@@ -493,9 +639,9 @@ def gen_mul_by_xy0_fp6(out,x,y,mod):
   t5 = t4+96
   gen_f2mul(t0,x0,y0,mod)
   gen_f2mul(t1,x1,y1,mod)
+
   gen_f2mul(t3,x2,y1,mod)
-  gen_mul_by_u_plus_1_fp2(t3,t3,mod)	# TODO: maybe clobbers?
-  gen_f2add(out0,x0,x1,mod)
+  gen_mul_by_u_plus_1_fp2(t3,t3,mod)
   
   gen_f2add(t4,x0,x1,mod)
   gen_f2add(t5,y0,y1,mod)
@@ -506,8 +652,10 @@ def gen_mul_by_xy0_fp6(out,x,y,mod):
   gen_f2mul(out2,x2,y0,mod)
   gen_f2add(out2,out2,t1,mod)
 
+  gen_f2add(out0,t3,t0,mod)
+
 def gen_mul_by_xy00z0_fp12(out,x,y,mod):
-  # x is f12, y is f6
+  # out is f12, x is f12, y is f6
   x0 = x
   x1 = x0+288
   y0 = y
@@ -515,9 +663,9 @@ def gen_mul_by_xy00z0_fp12(out,x,y,mod):
   y2 = y1+96
   out0 = out
   out00 = out0
-  out01 = out0+288
-  out02 = out0+576
-  out1 = out+864
+  out01 = out00+96
+  out02 = out01+96
+  out1 = out+288
   t0 = buffer_f12mul
   t00 = t0
   t01 = t00+96
@@ -526,12 +674,12 @@ def gen_mul_by_xy00z0_fp12(out,x,y,mod):
   t10 = t1
   t11 = t10+96
   t12 = t11+96
-  t2 = t1+576
+  t2 = t1+288
   t20 = t2
   t21 = t2+96
   gen_mul_by_xy0_fp6(t0,x0,y,mod)
   gen_mul_by_0y0_fp6(t1,x1,y2,mod)
-  gen_memcopy(t2,y,96)
+  gen_memcopy(t20,y0,96)
   gen_f2add(t21,y1,y2,mod)
   gen_f6add(out1,x0,x1,mod)
   gen_mul_by_xy0_fp6(out1,out1,t2,mod)
@@ -641,9 +789,12 @@ def gen_Eadd__madd_2001_b(f,XYZout,XYZ1,XYZ2,mod):
   print("// E add")
   print("/////////")
 
-def gen_Eadd__madd_2007_bl(f,XYZout,XYZ1,XYZ2,mod):
+def gen_Eadd__madd_2007_bl(f,XYZout,XYZ1,XYZ2,line1,mod):
   print("/////////")
   print("// Eadd https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-madd-2007-bl")
+  # for pairing:
+  #   line0 is useful for pairings which reuse that intermediate value in this calculation
+  #   XYZout and XYZ are both T, and E2 point, and XYZ2 is Q which is affine E2 point
 
   # inputs/ouput
   X1=XYZ1
@@ -664,25 +815,25 @@ def gen_Eadd__madd_2007_bl(f,XYZout,XYZ1,XYZ2,mod):
   HH = H+int(f[1])*48
   I = HH+int(f[1])*48
   J = I+int(f[1])*48
-  r = J+int(f[1])*48
-  V = r+int(f[1])*48
+  V = J+int(f[1])*48
+  r = line1 if line1 else V+int(f[1])*48
 
   # Z1Z1 = Z1^2
   print("// Z1Z1 = Z1^2")
-  gen_fmul(f,Z1Z1,Z1,Z1,mod)
+  gen_fsqr(f,Z1Z1,Z1,mod)
   # U2 = X2*Z1Z1
   print("// U2 = X2*Z1Z1")
   gen_fmul(f,U2,X2,Z1Z1,mod)
   # S2 = Y2*Z1*Z1Z1
   print("// S2 = Y2*Z1*Z1Z1")
-  gen_fmul(f,S2,Z1,Z1Z1,mod)
-  gen_fmul(f,S2,S2,Y2,mod)
+  gen_fmul(f,S2,Y2,Z1,mod)
+  gen_fmul(f,S2,S2,Z1Z1,mod)
   # H = U2-X1
   print("// H = U2-X1")
   gen_fsub(f,H,U2,X1,mod)
   # HH = H^2
   print("// HH = H^2")
-  gen_fmul(f,HH,H,H,mod)
+  gen_fsqr(f,HH,H,mod)
   # I = 4*HH
   print("// I = 4*HH")
   gen_fadd(f,I,HH,HH,mod)
@@ -690,7 +841,7 @@ def gen_Eadd__madd_2007_bl(f,XYZout,XYZ1,XYZ2,mod):
   # J = H*I
   print("// J = H*I")
   gen_fmul(f,J,H,I,mod)
-  # r = 2*(S2-Y1)
+  # line0 = 2*(S2-Y1)
   print("// r = 2*(S2-Y1)")
   gen_fsub(f,r,S2,Y1,mod)
   gen_fadd(f,r,r,r,mod)
@@ -699,33 +850,42 @@ def gen_Eadd__madd_2007_bl(f,XYZout,XYZ1,XYZ2,mod):
   gen_fmul(f,V,X1,I,mod)
   # X3 = r^2-J-2*V
   print("// X3 = r^2-J-2*V")
-  gen_fmul(f,X3,r,r,mod)
+  gen_fsqr(f,X3,r,mod)
   gen_fsub(f,X3,X3,J,mod)
   gen_fsub(f,X3,X3,V,mod)
   gen_fsub(f,X3,X3,V,mod)
   # Y3 = r*(V-X3)-2*Y1*J
   print("// Y3 = r*(V-X3)-2*Y1*J")
+  gen_fmul(f,J,J,Y1,mod)
+  gen_fsub(f,Y3,V,X3,mod)
+  gen_fmul(f,Y3,Y3,r,mod)
+  gen_fsub(f,Y3,Y3,J,mod)
+  gen_fsub(f,Y3,Y3,J,mod)
+  """
   gen_fsub(f,Y3,V,X3,mod)
   gen_fmul(f,Y3,r,Y3,mod)
-  gen_fmul(f,J,Y1,J,mod)	# overwriting J		TODO: overwrite something else, since need J
-  gen_fsub(f,Y3,Y3,J,mod)
-  gen_fsub(f,Y3,Y3,J,mod)
+  gen_fmul(f,V,Y1,J,mod)	# overwriting V
+  gen_fsub(f,Y3,Y3,V,mod)
+  gen_fsub(f,Y3,Y3,V,mod)
+  """
   # Z3 = (Z1+H)^2-Z1Z1-HH
   print("// Z3 = (Z1+H)^2-Z1Z1-HH")
   gen_fadd(f,Z3,Z1,H,mod)
-  gen_fmul(f,Z3,Z3,Z3,mod)
+  gen_fsqr(f,Z3,Z3,mod)
   gen_fsub(f,Z3,Z3,Z1Z1,mod)
   gen_fsub(f,Z3,Z3,HH,mod)
   
   print("// E add")
   print("/////////")
 
-  return I,J,r
+  return I,J,r		# these are useful for pairing
 
 
 
 
-def gen_Edouble__dbl_2009_alnr(f,XYZout,XYZ,mod):
+def gen_Edouble__dbl_2009_alnr(f,XYZout,XYZ,line0,mod):
+  # XYZout is E2 point, XYZ is E2 point		(note: for our pairing algorithm, T=XYZout=XYZ)
+  # line is an extra f2 point, not part of dbl operation, but useful for pairing's line evaluation
   print("///////////")
   print("// Edouble https://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-alnr")
 
@@ -736,6 +896,7 @@ def gen_Edouble__dbl_2009_alnr(f,XYZout,XYZ,mod):
   X3=XYZout
   Y3=X3+int(f[1])*48
   Z3=Y3+int(f[1])*48
+  #print("gen_Edouble__dbl_2009_alnr(",X1,Y1,Z1,X3,Y3,Z3,")")
 
   """
   A = X1^2
@@ -758,16 +919,16 @@ def gen_Edouble__dbl_2009_alnr(f,XYZout,XYZ,mod):
   F = E+int(f[1])*48
 
   print("// A = X1^2")
-  gen_fmul(f,A,X1,X1,mod)
+  gen_fsqr(f,A,X1,mod)
   print("// B = Y1^2")
-  gen_fmul(f,B,Y1,Y1,mod)
+  gen_fsqr(f,B,Y1,mod)
   print("// ZZ = Z1^2")
-  gen_fmul(f,ZZ,Z1,Z1,mod)
+  gen_fsqr(f,ZZ,Z1,mod)
   print("// C = B^2")
-  gen_fmul(f,C,B,B,mod)
+  gen_fsqr(f,C,B,mod)
   print("// D = 2*((X1+B)^2-A-C)")
   gen_fadd(f,D,X1,B,mod)
-  gen_fmul(f,D,D,D,mod)
+  gen_fsqr(f,D,D,mod)
   gen_fsub(f,D,D,A,mod)
   gen_fsub(f,D,D,C,mod)
   gen_fadd(f,D,D,D,mod)
@@ -775,10 +936,19 @@ def gen_Edouble__dbl_2009_alnr(f,XYZout,XYZ,mod):
   gen_fadd(f,E,A,A,mod)
   gen_fadd(f,E,E,A,mod)
   print("// F = E^2")
-  gen_fmul(f,F,E,E,mod)
+  gen_fsqr(f,F,E,mod)
+  # note: the following is not part of the dbl, but is useful for line evaluation
+  if line0:
+    print("// line0 = E+X1, this is useful for pairing")
+    gen_fadd(f,line0,E,X1,mod)
   print("// X3 = F-2*D")
-  gen_fadd(f,X3,D,D,mod)
-  gen_fsub(f,X3,F,X3,mod)
+  gen_fsub(f,X3,F,D,mod)
+  gen_fsub(f,X3,X3,D,mod)
+  print("// Z3 = (Y1+Z1)^2-B-ZZ")
+  gen_fadd(f,Z3,Y1,Z1,mod)
+  gen_fsqr(f,Z3,Z3,mod)
+  gen_fsub(f,Z3,Z3,B,mod)
+  gen_fsub(f,Z3,Z3,ZZ,mod)
   print("// Y3 = E*(D-X3)-8*C")
   gen_fsub(f,Y3,D,X3,mod)
   gen_fmul(f,Y3,E,Y3,mod)
@@ -786,11 +956,6 @@ def gen_Edouble__dbl_2009_alnr(f,XYZout,XYZ,mod):
   gen_fadd(f,C,C,C,mod)
   gen_fadd(f,C,C,C,mod)
   gen_fsub(f,Y3,Y3,C,mod)
-  print("// Z3 = (Y1+Z1)^2-B-ZZ")
-  gen_fadd(f,Z3,Y1,Z1,mod)
-  gen_fmul(f,Z3,Z3,Z3,mod)
-  gen_fsub(f,Z3,Z3,B,mod)
-  gen_fsub(f,Z3,Z3,ZZ,mod)
   print("// E double")
   print("////////////")
   return A,B,E,F,ZZ,X1
@@ -867,39 +1032,43 @@ def gen_Edouble__dbl_2009_l(f,XYZout,XYZ,mod):
 def gen_consts():
   # f12 one in mont form
   one = "15f65ec3fa80e4935c071a97a256ec6d77ce5853705257455f48985753c758baebf4000bc40c0002760900000002fffd"
-  gen_memstore(f12one,bytes.fromhex(one))
+  gen_memstore(f12one,bytearray.fromhex(one)[::-1])
   # prime
   p = "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab"
-  gen_memstore(mod,bytes.fromhex(p))
+  gen_memstore(mod,bytes.fromhex(p)[::-1])
   # inv
-  inv="89f3fffcfffcfffd000000000000000000000000000000000000000000000000"
+  inv="fdfffcfffcfff389000000000000000000000000000000000000000000000000"
   gen_memstore(mod+48,bytes.fromhex(inv))
 
 def gen_line_add(line,T,R,Q,mod):
-  # T on E2, R on E2, Q on E2 affine
-  TZ = T+384
+  # line is 3 f2s, T on E2, R on E2, Q on E2 affine
+  TZ = T+192
   QX = Q
-  QY = Q+192
+  QY = QX+96
+  line0 = line
+  line1 = line0+96
+  line2 = line1+96
   # ecadd
-  I,J,r = gen_Eadd__madd_2007_bl("f2",T,R,Q,mod)
+  I,J,r = gen_Eadd__madd_2007_bl("f2",T,R,Q,line1,mod)
   # line eval
   gen_f2mul(I,r,QX,mod)
   gen_f2mul(J,QY,TZ,mod)
   gen_f2sub(I,I,J,mod)
-  gen_f2add(line,I,I,mod)
-  gen_memcopy(line+48,r,48)	# ??? I think this is correct
-  gen_memcopy(line+96,TZ,96)	# ??? I think this is correct
+  gen_f2add(line0,I,I,mod)
+  #gen_memcopy(line1,r,96)	# already done in the 
+  gen_memcopy(line2,TZ,96)	
   
 def gen_line_dbl(line,T,Q,mod):
-  # line is f6, T is on E2, Q is on E2
+  # line is 3 f2s, T is E2 point, Q E2 point	(note: our pairing algorithm, T=Q)
   line0 = line
   line1 = line0+96
   line2 = line1+96
+  QX = Q
   TZ = T+192
   # double
-  A,B,E,F,ZZ,X1 = gen_Edouble__dbl_2009_alnr("f2",T,Q,mod)
+  A,B,E,F,ZZ,X1 = gen_Edouble__dbl_2009_alnr("f2",T,Q,line0,mod)
   # eval line
-  gen_f2add(line0,E,Q,mod)
+  # note: line0=E+QX is already done in alnr function
   gen_f2sqr(line0,line0,mod)
   gen_f2sub(line0,line0,A,mod)
   gen_f2sub(line0,line0,F,mod)
@@ -910,9 +1079,9 @@ def gen_line_dbl(line,T,Q,mod):
   gen_f2mul(line2,TZ,ZZ,mod)
   
 def gen_line_by_Px2(line,Px2,mod):
-  # line is f6, Px2 is E2 point
+  # line is 3 f2s, Px2 is E1 point affine
   Px2X = Px2
-  Px2Y = Px2X+96
+  Px2Y = Px2X+48
   line00 = line
   line01 = line00+48
   line10 = line01+48
@@ -925,6 +1094,7 @@ def gen_line_by_Px2(line,Px2,mod):
   gen_f1mul(line21,line21,Px2Y,mod)
 
 def gen_start_dbl(out,T,Px2,mod):
+  # out is f12 point (ie 2 f6 pts), T is E2 point, Px2 is E1 point (affine)
   out00 = out
   out11 = out+288+96	# ??
   line = buffer_line	# 3 f2 points
@@ -935,52 +1105,86 @@ def gen_start_dbl(out,T,Px2,mod):
   gen_memcopy(out,zero,576)
   gen_memcopy(out00,line0,192)
   gen_memcopy(out11,line2,96)
-  # TODO: confirm that loop is never entered
 
-def gen_add_dbl(out,T,Q,Px2,k,mod):
+def gen_add_dbl_loop(out,T,Q,Px2,mod):
   line = buffer_line	# 3 f2 points
+  print("0x3f")         # loop iterator, 63 iters
+  #print("0x0 0x2 0x3 0x9 0x20 0x10") # jumk
+  print("miller_loop:")
+  print("0x1 swap1 sub")        # decrement loop iterator and leave it a top of stack
+  print("dup1 0xd201000000010000 shr")   # get the next bit by shifting by loop iterator
+  print("0x1 and")              # get next bit by shifting by loop iterator
+  print("0x1 xor end_if jumpi")         # skip if next bit was 1 (ie skip if flipped bit is 1)
+  print("begin_if:")    # if 1 bit, then add
+  #print("0xffffff pop")
   gen_line_add(line,T,T,Q,mod)
   gen_line_by_Px2(line,Px2,mod)
   gen_mul_by_xy00z0_fp12(out,out,line,mod)
-  # loop init	#TODO
-  # put k on stack
-  # while(k--)
-  for i in range(k):
-    gen_f12sqr(out,out,mod)
-    gen_line_dbl(line,T,T,mod)
-    gen_line_by_Px2(line,Px2,mod)
-    gen_mul_by_xy00z0_fp12(out,out,line,mod)
+  print("end_if:")
+  #print("0xffffffff pop")
+  gen_f12sqr(out,out,mod)
+  gen_line_dbl(line,T,T,mod)
+  gen_line_by_Px2(line,Px2,mod)
+  gen_mul_by_xy00z0_fp12(out,out,line,mod)
+  print("dup1 0x1 lt")          # check if 1 < loop iterator	note: don't iterate on least significant bit
+  #print("dup1 0x62 lt")          # check if 1 < loop iterator	note: don't iterate on least significant bit
+  print("miller_loop jumpi")    # if loop iterator > 0, then jump to next iter
+  
+  """
+  #0xd201000000010000
+  #0b
+1
+10
+100
+100000000
+10000000000000000000000000000000
+10000000000000000
+  """
   
   
   
 def gen_miller_loop(out,P,Q,mod):
-  # P is E1 point, Q is E2 point
+  # P is E1 point (affine), Q is E2 point (affine)
   PX = P
-  PY = P+48
+  PY = PX+48
   QX = Q
   # temp offsets
   T = buffer_miller_loop	# E2 point
   TX = T
   TY = TX+96
   TZ = TY+96
-  Px2 = T+288			# E1 point, affine
+  Px2 = T+288			# E1 point (affine)
   Px2X = Px2
   Px2Y = Px2+48
   # huff module
   print("#define macro MILLER_LOOP = takes(0) returns(0) {")
+  gen_consts()	# TODO: put this somewhere else
   # prepare some stuff
-  gen_f1add(Px2,PX,PX,mod)
+  gen_f1add(Px2X,PX,PX,mod)
   gen_f1neg(Px2X,Px2X,mod)
   gen_f1add(Px2Y,PY,PY,mod)
   gen_memcopy(TX,QX,192)
   gen_memcopy(TZ,f12one,96)
   # execute
   gen_start_dbl(out,T,Px2,mod)
+  gen_add_dbl_loop(out,T,Q,Px2,mod)
+
+
+  """
+  gen_add_dbl(out,T,Q,Px2,1,mod)
+  gen_add_dbl(out,T,Q,Px2,1,mod)
+  gen_add_dbl(out,T,Q,Px2,1,mod)
+  gen_add_dbl(out,T,Q,Px2,1,mod)
+  gen_add_dbl(out,T,Q,Px2,1,mod)
+  """
+  """
+
   gen_add_dbl(out,T,Q,Px2,2,mod)
   gen_add_dbl(out,T,Q,Px2,3,mod)
   gen_add_dbl(out,T,Q,Px2,9,mod)
   gen_add_dbl(out,T,Q,Px2,32,mod)
   gen_add_dbl(out,T,Q,Px2,16,mod)
+  """
   gen_f12_conjugate(out,mod)
   print("} // MILLER_LOOP")
   
@@ -988,9 +1192,8 @@ def gen_final_exponentiation(out,in_):
   pass
 
 def gen_pairing():
-  #gen_consts()
   # input
-  gen_miller_loop(buffer_output,buffer_inputs,buffer_inputs+144,mod)
+  gen_miller_loop(buffer_output,buffer_inputs,buffer_inputs+96,mod)
   #gen_final_exponentiation(buffer_output,buffer_output)
 
   
@@ -1011,6 +1214,9 @@ if __name__=="__main__":
   submod384_count=0
   mulmodmont384_count=0
   gen_pairing()
+  #gen_test_case_values()
+  #print("f12one, mod, buffer_miller_loop, buffer_line, buffer_f2mul, buffer_f6mul, buffer_f12mul, buffer_Eadd, buffer_Edouble, buffer_inputs, buffer_output")
+  #print(f12one, mod, buffer_miller_loop, buffer_line, buffer_f2mul, buffer_f6mul, buffer_f12mul, buffer_Eadd, buffer_Edouble, buffer_inputs, buffer_output)
   if 0:
     print("addmod384_count ",addmod384_count)
     print("submod384_count ",submod384_count)
