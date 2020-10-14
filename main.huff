@@ -16,6 +16,7 @@ template<val>
 
   // set up memory
   // test from https://tools.ietf.org/id/draft-yonezawa-pairing-friendly-curves-02.html#rfc.appendix.B
+  // also same values but easier to copy: https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/?include_text=1 appendix B
   // Input x value:
   // 0x17f1d3a7 3197d794 2695638c 4fa9ac0f c3688c4f 9774b905 a14e3a3f 171bac58 6c55e83f f97a1aef fb3af00a db22c6bb
   // Input y value:
@@ -68,6 +69,7 @@ template<val>
 0xc204e3ce1ab06324f11b593dac11ef61aa701a15a39d549e185583d29f16f800 0x2628 mstore
 */
 
+/*
 // wasmsnark test
 0xedae919853b05e124b0df9d0eb00bb861ce4007fb66a592b5b010403b043dc81 0x2528 mstore
 0x7a0761ddbeef7f574bc8f1ec25da810f199ebd34b2dee439b771301cd36f80cd 0x2548 mstore
@@ -78,8 +80,7 @@ template<val>
 0x0128b808865493e189a2ac3bccc93a922cd16051699a426da7d3bd8caa9bfdad 0x25e8 mstore
 0x1a352edac6cdc98c116e7d7227d5e50cbe795ff05f07a9aaa11dec5c270d373f 0x2608 mstore
 0xab992e57ab927426af63a7857e283ecb998bc22bb0d2ac32cc34a72ea0c40606 0x2628 mstore
-
-
+*/
 
   // call miller loop over above memory
   MILLER_LOOP()
@@ -113,9 +114,15 @@ template<val>
 0xab992e57ab927426af63a7857e283ecb998bc22bb0d2ac32cc34a72ea0c40606 0x2628 mstore
 
 
+
+  0x0	// loop_variable starts at 0
+  
+bench_loop:
   MILLER_LOOP()
-  MILLER_LOOP()
-  MILLER_LOOP()
+
+  0x1 add	   // increment loop_variable
+  dup1 0x3 gt      // check if loop_variable is less than the const on this line
+  bench_loop jumpi // conditional jump if above conditional is true
 
   0xff 0 mstore8 1 0 return	// return a single byte, 0xff, to make sure it executed this far
   //stop
