@@ -15,7 +15,9 @@ template<val>
 #define macro MILLER_LOOP_TEST_HARDCODED = takes(0) returns(0) {
 
   // set up memory
+
 // test from https://tools.ietf.org/id/draft-yonezawa-pairing-friendly-curves-02.html#rfc.appendix.B
+/*
   0xbbc622db0af03afbef1a7af93fe8556c58ac1b173f3a4ea105b974974f8c68c3 0x2528 mstore
   0x0faca94f8c63952694d79731a7d3f117e1e7c5462923aa0ce48a88a244c73cd0 0x2548 mstore
   0xedb3042ccb18db00f60ad0d595e0f5fce48a1d74ed309ea0f1a0aae381f4b308 0x2568 mstore
@@ -25,8 +27,7 @@ template<val>
   0x0128b808865493e189a2ac3bccc93a922cd16051699a426da7d3bd8caa9bfdad 0x25e8 mstore
   0x1a352edac6cdc98c116e7d7227d5e50cbe795ff05f07a9aaa11dec5c270d373f 0x2608 mstore
   0xab992e57ab927426af63a7857e283ecb998bc22bb0d2ac32cc34a72ea0c40606 0x2628 mstore
-
-
+*/
 
 /*
 // neg of group identities found in blst
@@ -67,9 +68,22 @@ template<val>
 0xab992e57ab927426af63a7857e283ecb998bc22bb0d2ac32cc34a72ea0c40606 0x2628 mstore
 */
 
+// from casey
+0x2eeab68a7e81265049f5f0605bdb1d707c989dc00254130aa22758bac03cbb5f 0x2528 mstore
+0x76f19e747d605a66b7fa20b1efdf830b17a7236d48a48d2fab02816bec4804c3 0x2548 mstore
+0xbb34ed3abffb5c373c63a2d1e53a9d0ba396e336b4ed963e173d4962532ec815 0x2568 mstore
+0xa7be8e258958f53b5fd7f0e8c38cacea938777a70fb434a47d590358ff328f16 0x2588 mstore
+0xee904327d5a5974ef301ebf77f2ffc168d9da6ddf1097969954b3a5be0954bb8 0x25a8 mstore
+0x696507d68260a6ec027d20f9b880302e7988ec59a7c5dfefa42147b8f5a53a18 0x25c8 mstore
+0x91ad9e2ed61db2570c0d87927f83522f15642c0c0b5fddaf0df7decea0a04a7b 0x25e8 mstore
+0x476eaae313ae06548de9039b805c2e004daed96f5ef313e05f4b61fdd6e77f8e 0x2608 mstore
+0x7587eef59d2cd050b7a75107ede17f814398664e2bf6607c7d733f02bbc39d03 0x2628 mstore
+
+
   // call miller loop over above memory
   MILLER_LOOP()
 
+  0xff 0 mstore8 1 0 return	// return a single byte, 0xff, to make sure it executed this far
 }
 
 

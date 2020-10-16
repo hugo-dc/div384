@@ -316,7 +316,7 @@ mstore
 0x3f
 miller_loop:
 0x1 swap1 sub
-dup1 0xd201000000010000 shr
+0xd201000000010000 dup2 shr
 0x1 and
 0x1 xor end_if jumpi
 begin_if:

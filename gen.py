@@ -152,7 +152,7 @@ def gen_test_case_values():
     inE2 += bytearray.fromhex("0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801")[::-1] 
     inE2 += bytearray.fromhex("0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be")[::-1] 
     gen_memstore(buffer_inputs+96,inE2)
-  if 1:
+  if 0:
     # from https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/?include_text=1 appendix B
     inE1  = bytearray.fromhex("17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb")[::-1]
     inE1  += bytearray.fromhex("08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1")[::-1]
@@ -162,8 +162,17 @@ def gen_test_case_values():
     inE2  += bytearray.fromhex("0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801")[::-1]
     inE2  += bytearray.fromhex("0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be")[::-1]
     gen_memstore(buffer_inputs+96,inE2)
-      
-      
+  if 1:
+    # from casey
+    inE1  = bytearray.fromhex("0b83dfefb120fab7665a607d749ef1765fbb3cc0ba5827a20a135402c09d987c701ddb5b60f0f5495026817e8ab6ea2e")[::-1]
+    inE1  += bytearray.fromhex("15c82e5362493d173e96edb436e396a30b9d3ae5d1a2633c375cfbbf3aed34bbc30448ec6b8102ab2f8da4486d23a717")[::-1]
+    gen_memstore(buffer_inputs,inE1)
+    inE2  = bytearray.fromhex("16fc2f7ff7eb01f34e97a5d5274390ee168f32ff5803597da434b40fa7778793eaac8cc3e8f0d75f3bf55889258ebea7")[::-1]
+    inE2  += bytearray.fromhex("183aa5f5b84721a4efdfc5a759ec88792e3080b8f9207d02eca66082d6076569b84b95e05b3a4b95697909f1dda69d8d")[::-1]
+    inE2  += bytearray.fromhex("002e5c809b03e98d5406ae13e3aa6e477b4aa0a0cedef70dafdd5f0b0c2c64152f52837f92870d0c57b21dd62e9ead91")[::-1]
+    inE2  += bytearray.fromhex("039dc3bb023f737d7c60f62b4e669843817fe1ed0751a7b750d02c9df5ee87758e7fe7d6fd614b5fe013f35e6fd9ae4d")[::-1]
+    gen_memstore(buffer_inputs+96,inE2)
+
 
       
       
@@ -1130,7 +1139,7 @@ def gen_add_dbl_loop(out,T,Q,Px2,mod):
   #print("0x0 0x2 0x3 0x9 0x20 0x10") # jumk
   print("miller_loop:")
   print("0x1 swap1 sub")        # decrement loop iterator and leave it a top of stack
-  print("dup1 0xd201000000010000 shr")   # get the next bit by shifting by loop iterator
+  print("0xd201000000010000 dup2 shr")   # get the next bit by shifting by loop iterator
   print("0x1 and")              # get next bit by shifting by loop iterator
   print("0x1 xor end_if jumpi")         # skip if next bit was 1 (ie skip if flipped bit is 1)
   print("begin_if:")    # if 1 bit, then add
@@ -1206,7 +1215,7 @@ def gen_miller_loop(out,P,Q,mod):
   """
   gen_f12_conjugate(out,mod)
   print("} // MILLER_LOOP")
-  
+
 def gen_final_exponentiation(out,in_):
   pass
 
@@ -1219,6 +1228,68 @@ def gen_pairing():
 
 
   
+
+def gen_add_dbl_unrolled(out,T,Q,Px2,k,mod):
+  line = buffer_line    # 3 f2 points
+  """
+  gen_line_add(line,T,T,Q,mod)
+  gen_line_by_Px2(line,Px2,mod)
+  gen_mul_by_xy00z0_fp12(out,out,line,mod)
+  """
+  # loop init   #TODO
+  # put k on stack
+  # while(k--)
+  for i in range(k):
+    gen_f12sqr(out,out,mod)
+    gen_line_dbl(line,T,T,mod)
+    gen_line_by_Px2(line,Px2,mod)
+    gen_mul_by_xy00z0_fp12(out,out,line,mod)
+
+
+def gen_miller_loop_unrolled(out,P,Q,mod):
+  # P is E1 point (affine), Q is E2 point (affine)
+  PX = P
+  PY = PX+48
+  QX = Q
+  # temp offsets
+  T = buffer_miller_loop	# E2 point
+  TX = T
+  TY = TX+96
+  TZ = TY+96
+  Px2 = T+288			# E1 point (affine)
+  Px2X = Px2
+  Px2Y = Px2+48
+  # huff module
+  print("#define macro MILLER_LOOP = takes(0) returns(0) {")
+  gen_consts()	# TODO: put this somewhere else
+  # prepare some stuff
+  gen_f1add(Px2X,PX,PX,mod)
+  gen_f1neg(Px2X,Px2X,mod)
+  gen_f1add(Px2Y,PY,PY,mod)
+  gen_memcopy(TX,QX,192)
+  gen_memcopy(TZ,f12one,96)
+  # execute
+  gen_start_dbl(out,T,Px2,mod)
+  gen_add_dbl_unrolled(out,T,Q,Px2,2,mod)
+  gen_add_dbl_unrolled(out,T,Q,Px2,3,mod)
+  gen_add_dbl_unrolled(out,T,Q,Px2,9,mod)
+  gen_add_dbl_unrolled(out,T,Q,Px2,32,mod)
+  gen_add_dbl_unrolled(out,T,Q,Px2,16,mod)
+
+  gen_f12_conjugate(out,mod)
+  print("} // MILLER_LOOP")
+
+
+def gen_pairing_unrolled():
+  # input
+  gen_miller_loop_unrolled(buffer_output,buffer_inputs,buffer_inputs+96,mod)
+  #gen_final_exponentiation(buffer_output,buffer_output)
+  print(addmod384_count)
+  print(submod384_count)
+  print(mulmodmont384_count)
+
+  
+
 if __name__=="__main__":
   #gen_Eadd__madd_2007_bl("f2",1,2,3,4)
   #gen_Edouble__dbl_2009_alnr("f2",1,2,3)
@@ -1233,6 +1304,7 @@ if __name__=="__main__":
   submod384_count=0
   mulmodmont384_count=0
   gen_pairing()
+  #gen_pairing_unrolled()
   #gen_test_case_values()
   #print("f12one, mod, buffer_miller_loop, buffer_line, buffer_f2mul, buffer_f6mul, buffer_f12mul, buffer_Eadd, buffer_Edouble, buffer_inputs, buffer_output")
   #print(f12one, mod, buffer_miller_loop, buffer_line, buffer_f2mul, buffer_f6mul, buffer_f12mul, buffer_Eadd, buffer_Edouble, buffer_inputs, buffer_output)
