@@ -138,7 +138,7 @@ def gen_test_case_values():
     inE2 += bytearray.fromhex("00690d665d446f7bd960736bcbb2efb4de03ed7274b49a58e458c282f832d204f2cf88886d8c7c2ef094094409fd4ddf")[::-1] 
     inE2 += bytearray.fromhex("00f8169fd28355189e549da3151a70aa61ef11ac3d591bf12463b01acee304c24279b83f5e52270bd9a1cdd185eb8f93")[::-1] 
     gen_memstore(buffer_inputs+96,inE2)
-  if 1:
+  if 0:
     print()
     # these are from wasmsnark
     # cd wasmsnark && ~/repos/node/node-v12.18.4-linux-x64/bin/npx mocha test/bls12381.js
@@ -152,6 +152,24 @@ def gen_test_case_values():
     inE2 += bytearray.fromhex("0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801")[::-1] 
     inE2 += bytearray.fromhex("0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be")[::-1] 
     gen_memstore(buffer_inputs+96,inE2)
+  if 1:
+    # from https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/?include_text=1 appendix B
+    inE1  = bytearray.fromhex("17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb")[::-1]
+    inE1  += bytearray.fromhex("08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1")[::-1]
+    gen_memstore(buffer_inputs,inE1)
+    inE2  = bytearray.fromhex("024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8")[::-1]
+    inE2  += bytearray.fromhex("13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e")[::-1]
+    inE2  += bytearray.fromhex("0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801")[::-1]
+    inE2  += bytearray.fromhex("0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be")[::-1]
+    gen_memstore(buffer_inputs+96,inE2)
+      
+      
+
+      
+      
+      
+      
+
 
 # for counting number of operations
 addmod384_count=0
@@ -1129,6 +1147,7 @@ def gen_add_dbl_loop(out,T,Q,Px2,mod):
   print("dup1 0x1 lt")          # check if 1 < loop iterator	note: don't iterate on least significant bit
   #print("dup1 0x62 lt")          # check if 1 < loop iterator	note: don't iterate on least significant bit
   print("miller_loop jumpi")    # if loop iterator > 0, then jump to next iter
+  print("pop")			# pop loop iterator to leave stack how we found it
   
   """
   #0xd201000000010000

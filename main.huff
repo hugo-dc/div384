@@ -15,21 +15,7 @@ template<val>
 #define macro MILLER_LOOP_TEST_HARDCODED = takes(0) returns(0) {
 
   // set up memory
-  // test from https://tools.ietf.org/id/draft-yonezawa-pairing-friendly-curves-02.html#rfc.appendix.B
-  // also same values but easier to copy: https://datatracker.ietf.org/doc/draft-irtf-cfrg-pairing-friendly-curves/?include_text=1 appendix B
-  // Input x value:
-  // 0x17f1d3a7 3197d794 2695638c 4fa9ac0f c3688c4f 9774b905 a14e3a3f 171bac58 6c55e83f f97a1aef fb3af00a db22c6bb
-  // Input y value:
-  // 0x08b3f481 e3aaa0f1 a09e30ed 741d8ae4 fcf5e095 d5d00af6 00db18cb 2c04b3ed d03cc744 a2888ae4 0caa2329 46c5e7e1
-  // Input x’0 value:
-  // 0x24aa2b2 f08f0a91 26080527 2dc51051 c6e47ad4 fa403b02 b4510b64 7ae3d177 0bac0326 a805bbef d48056c8 c121bdb8
-  // Input x’1 value:
-  // 0x13e02b60 52719f60 7dacd3a0 88274f65 596bd0d0 9920b61a b5da61bb dc7f5049 334cf112 13945d57 e5ac7d05 5d042b7e
-  // Input y’0 value:
-  // 0xce5d527 727d6e11 8cc9cdc6 da2e351a adfd9baa 8cbdd3a7 6d429a69 5160d12c 923ac9cc 3baca289 e1935486 08b82801
-  // Input y’1 value:
-  // 0x606c4a0 2ea734cc 32acd2b0 2bc28b99 cb3e287e 85a763af 267492ab 572e99ab 3f370d27 5cec1da1 aaa9075f f05f79be
-/*
+// test from https://tools.ietf.org/id/draft-yonezawa-pairing-friendly-curves-02.html#rfc.appendix.B
   0xbbc622db0af03afbef1a7af93fe8556c58ac1b173f3a4ea105b974974f8c68c3 0x2528 mstore
   0x0faca94f8c63952694d79731a7d3f117e1e7c5462923aa0ce48a88a244c73cd0 0x2548 mstore
   0xedb3042ccb18db00f60ad0d595e0f5fce48a1d74ed309ea0f1a0aae381f4b308 0x2568 mstore
@@ -39,7 +25,6 @@ template<val>
   0x0128b808865493e189a2ac3bccc93a922cd16051699a426da7d3bd8caa9bfdad 0x25e8 mstore
   0x1a352edac6cdc98c116e7d7227d5e50cbe795ff05f07a9aaa11dec5c270d373f 0x2608 mstore
   0xab992e57ab927426af63a7857e283ecb998bc22bb0d2ac32cc34a72ea0c40606 0x2628 mstore
-*/
 
 
 
