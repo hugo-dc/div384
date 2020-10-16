@@ -1,5 +1,5 @@
 {
-    "miller_loop" : {
+    "miller_loop_bench" : {
         "_info" : {
             "comment" : "",
             "filledwith" : "testeth 1.8.0-6+commit.c7ba3b69",

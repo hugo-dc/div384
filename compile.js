@@ -10,8 +10,8 @@ const { inputMap, macros, jumptables } = parser.parseFile('main.huff', pathToDat
 
 const {
     data: { bytecode: macroCode },
-//} = parser.processMacro('MILLER_LOOP_TEST_HARDCODED', 0, [], macros, inputMap, jumptables);
-} = parser.processMacro('MILLER_LOOP_BENCH', 0, [], macros, inputMap, jumptables);
+} = parser.processMacro('MILLER_LOOP_TEST_HARDCODED', 0, [], macros, inputMap, jumptables);
+//} = parser.processMacro('MILLER_LOOP_BENCH', 0, [], macros, inputMap, jumptables);
 
 console.log("0x"+macroCode)
 
