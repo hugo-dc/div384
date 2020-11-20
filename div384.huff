@@ -1,3 +1,36 @@
+#define macro NEXT_POWER_OF_TWO = takes(1) returns(1) {
+  // Calculate next power of 2
+  // Algorithm from: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+  dup1
+  01 swap1 sub  // v--
+
+  // v = v | v >> 1
+  01 shr
+  or
+
+  // v = v | v >> 2
+  dup1
+  02 shr
+  or
+
+  // v = v | v >> 4
+  dup1
+  04 shr
+  or
+
+  // v = v | v >> 8
+  dup1
+  08 shr
+  or
+
+  // v = v | v >> 16
+  dup1
+  16 shr
+  or
+
+  01 add    // v++
+}
+
 #define macro MSB = takes(1) returns(1) {
   mload                 // 146
   00 eq
@@ -20,31 +53,8 @@ loop:
   swap2           // 
   loop jumpi
 
-  swap1
-  // Calculate next power of 2
-  // Algorithm from: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-  dup1          // 194
-  01 swap1 sub
-  01 shr        // 201  
-  or            // 202
-  
-  dup1
-  02 shr
-  or            // 207
+  swap1 NEXT_POWER_OF_TWO()
 
-  dup1
-  04 shr
-  or            // 212
-
-  dup1
-  08 shr
-  or            // 212
-
-  dup1
-  16 shr
-  or            // 212
-
-  01 add        //
 
 is_zero2: // this should be somewhere else 
   00
