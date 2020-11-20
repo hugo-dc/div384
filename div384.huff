@@ -1,13 +1,86 @@
+#define macro MSB = takes(1) returns(1) {
+  mload                 // 146
+  00 eq
+  is_zero jumpi         // Checks if the first limb is zero
+
+is_zero:                // Checks second limb
+  32 mload
+  128 shr
+  dup1
+  00 eq
+  is_zero2 jumpi
+  00 swap1              // MSB
+  
+loop:  
+  02 swap1 div
+  dup1
+  00 eq 00 eq
+  swap2           // 181
+  01 add
+  swap2           // 
+  loop jumpi
+
+  swap1
+  // Calculate next power of 2
+  // Algorithm from: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+  dup1          // 194
+  01 swap1 sub
+  01 shr        // 201  
+  or            // 202
+  
+  dup1
+  02 shr
+  or            // 207
+
+  dup1
+  04 shr
+  or            // 212
+
+  dup1
+  08 shr
+  or            // 212
+
+  dup1
+  16 shr
+  or            // 212
+
+  01 add        //
+
+is_zero2: // this should be somewhere else 
+  00
+}
+
+#define macro N = takes(0) returns (0) {
+  00 MSB()
+}
+
+#define macro T = takes(0) returns (0) {
+
+}
+
+
 
 #define macro DIV384 = takes(0) returns(0) {
-// x
-0x0000000000000000000000000000000000000000000000000000000000000000 0x00 mstore
-0x0000000000000000000000000000000000000000000000010000000000000000 0x32 mstore
 
-// y
-0x0000000000000000000000000000000000000000000000000000000000000000 0x64 mstore
-0x0000000000000000000000000000000000000000000000010000000000000000 0x96 mstore
+// x (dividend) = 721948327 - MSB = 44
+0x0000000000000000000000000000000000000000000000000000000000000000 0x00 mstore  // LIMB 1 - MSB = 0
+0x0000000000000000000000002b080ea700000000000000000000000000000000 0x20 mstore  // LIMB 2 - MSB = 12
+//                                |
+// y (divisor) = 84461
+0x0000000000000000000000000000000000000000000000000000000000000000 0x40 mstore  // LIMB 1
+0x000000000000000000000000000149ed00000000000000000000000000000000 0x60 mstore  // LIMB 2
+//                                |
 
 
-
+// 0. Calculate $n$ and $t$.
+N()
+// 1. For $j$ from $0$ to $(n-t)$ do: $q_j\leftarrow 0$.
+// 2. While $(x \geq yb^{n-t})$ do the following: $q_{n-t} \leftarrow q_{n-t} + 1$, $x \leftarrow x - yb^{n-t}$.
+// 3. For $i$ from $n$ down to $(t + 1)$ do the following:
+//    3.1 If $x_i = y_t$ then set $q_{i - t - 1} \leftarrow b - 1$; otherwise set $q_{i-t-1} \leftarrow \lfloor (x_ib + x_{i-1})/y_t \rfloor$.
+//    3.2 While $(q_{i-t-1}(y_tb + y_{t-1}) > x_ib^2 + x_{i-1}b+x_{i-2})$ do: $q_{i-t-1} \leftarrow q_{i-t-1} - 1$.
+//    3.3 $x \leftarrow x - q_{i-t-1}yb^{i-t-1}$
+//    3.4 If $x < 0$ then set $x \leftarrow x + yb^{i-t-1}$ and $q_{i-t-1} \leftarrow q_{i-t-1} - 1$.
+// 4. $r \leftarrow x$.
+// 5. Return $(q, r)$.
 }
