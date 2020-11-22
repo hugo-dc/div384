@@ -1,8 +1,18 @@
+#define macro NEXT_MULTIPLE_OF_EIGHT = takes(1) returns(1) {
+  // (x+7) - ((x-7) MOD 8)
+  7 add
+  dup1
+  8 swap1 mod
+  swap1
+  sub
+}
+
+// NOT USED
 #define macro NEXT_POWER_OF_TWO = takes(1) returns(1) {
   // Calculate next power of 2
   // Algorithm from: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-  dup1
   01 swap1 sub  // v--
+  dup1
 
   // v = v | v >> 1
   01 shr
@@ -32,19 +42,20 @@
 }
 
 #define macro MSB = takes(1) returns(1) {
-  mload                 // 146
+  dup1
+  mload                 // 147
   00 eq
   is_zero jumpi         // Checks if the first limb is zero
 
-is_zero:                // Checks second limb
-  32 mload
-  128 shr
+is_zero:                // Checks second limb - 155
+  32 add mload
+  128 shr               // 162
   dup1
   00 eq
   is_zero2 jumpi
-  00 swap1              // MSB
+  00 swap1              // counter
   
-loop:  
+loop:                   // 174
   02 swap1 div
   dup1
   00 eq 00 eq
@@ -53,11 +64,15 @@ loop:
   swap2           // 
   loop jumpi
 
-  swap1 NEXT_POWER_OF_TWO()
-
+  //pop NEXT_POWER_OF_TWO()  // 195
+  pop NEXT_MULTIPLE_OF_EIGHT() // 195
+  //128 add                      // 206
+  8 swap1 div
+  //32 sub
+  //32 add
 
 is_zero2: // this should be somewhere else 
-  00
+  //00
 }
 
 #define macro N = takes(0) returns (0) {
@@ -65,27 +80,70 @@ is_zero2: // this should be somewhere else
 }
 
 #define macro T = takes(0) returns (0) {
-
+  64 MSB()
 }
 
 
+//#define macro STEP_1 = takes(
+
+
+#define macro POW = takes(2) returns(1) {
+start_pow:           // 284
+   // if n = 0, return 1
+   dup2 00 eq        // 285
+   return_1 jumpi    // 289
+   // if n = 1, return x
+   dup2 01 eq        // 293
+   //return_x jumpi    // 297 - since x is already on stack we should safely go to the end
+   end jumpi         // 297
+   // if n is even = pow(x * x, n / 2)
+   dup2 02 swap1 mod // 301
+   01 eq             // 306
+   is_odd jumpi      // 309
+   dup1 dup1 mul     // 313
+   02 dup4 div       // 318 - maybe this could be swap4 instead of dup4
+   start_pow jump
+   // if n is odd  = x * pow(x * x, (n - 1) / 2)
+is_odd:
+   
+   end jump
+
+return_1:            // 329
+   01                // TODO: Clean stack
+   end jump
+
+//return_x:            // TODO: should return x
+   // already on stack
+
+end:
+}
 
 #define macro DIV384 = takes(0) returns(0) {
 
 // x (dividend) = 721948327 - MSB = 44
-0x0000000000000000000000000000000000000000000000000000000000000000 0x00 mstore  // LIMB 1 - MSB = 0
-0x0000000000000000000000002b080ea700000000000000000000000000000000 0x20 mstore  // LIMB 2 - MSB = 12
+0x0000000000000000000000000000000000000000000000000000000000000000 0x00 mstore  // LIMB 1 - MSB = 
+0x0000000000000000000000002b080ea700000000000000000000000000000000 0x20 mstore  // LIMB 2 - MSB = 12 + 32 = 44
 //                                |
 // y (divisor) = 84461
 0x0000000000000000000000000000000000000000000000000000000000000000 0x40 mstore  // LIMB 1
-0x000000000000000000000000000149ed00000000000000000000000000000000 0x60 mstore  // LIMB 2
+0x000000000000000000000000000149ed00000000000000000000000000000000 0x60 mstore  // LIMB 2 - MSB = 13 + 32 = 45
 //                                |
 
 
 // 0. Calculate $n$ and $t$.
-N()
+N() // 4 bytes
+T() // 3 bytes
+
+dup2
+dup2
 // 1. For $j$ from $0$ to $(n-t)$ do: $q_j\leftarrow 0$.
+
+
 // 2. While $(x \geq yb^{n-t})$ do the following: $q_{n-t} \leftarrow q_{n-t} + 1$, $x \leftarrow x - yb^{n-t}$.
+swap1 sub // $(n-t)$
+16        // $b$
+POW()
+
 // 3. For $i$ from $n$ down to $(t + 1)$ do the following:
 //    3.1 If $x_i = y_t$ then set $q_{i - t - 1} \leftarrow b - 1$; otherwise set $q_{i-t-1} \leftarrow \lfloor (x_ib + x_{i-1})/y_t \rfloor$.
 //    3.2 While $(q_{i-t-1}(y_tb + y_{t-1}) > x_ib^2 + x_{i-1}b+x_{i-2})$ do: $q_{i-t-1} \leftarrow q_{i-t-1} - 1$.
@@ -93,4 +151,8 @@ N()
 //    3.4 If $x < 0$ then set $x \leftarrow x + yb^{i-t-1}$ and $q_{i-t-1} \leftarrow q_{i-t-1} - 1$.
 // 4. $r \leftarrow x$.
 // 5. Return $(q, r)$.
+
+// Tests
+// 30 NEXT_MULTIPLE_OF_EIGHT()
+
 }
