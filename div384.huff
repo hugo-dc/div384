@@ -1,3 +1,20 @@
+#define macro X_OFFSET_00 = takes(0) returns(1) {
+  00
+}
+
+#define macro X_OFFSET_01 = takes(0) returns (1) {
+  32
+}
+
+#define macro Y_OFFSET_00 = takes(0) returns (1) {
+  64
+}
+
+#define macro Y_OFFSET_01 = takes(0) returns (1) {
+  96
+}
+
+
 #define macro NEXT_MULTIPLE_OF_EIGHT = takes(1) returns(1) {
   // (x+7) - ((x-7) MOD 8)
   7 add
@@ -7,39 +24,6 @@
   sub
 }
 
-// NOT USED
-#define macro NEXT_POWER_OF_TWO = takes(1) returns(1) {
-  // Calculate next power of 2
-  // Algorithm from: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-  01 swap1 sub  // v--
-  dup1
-
-  // v = v | v >> 1
-  01 shr
-  or
-
-  // v = v | v >> 2
-  dup1
-  02 shr
-  or
-
-  // v = v | v >> 4
-  dup1
-  04 shr
-  or
-
-  // v = v | v >> 8
-  dup1
-  08 shr
-  or
-
-  // v = v | v >> 16
-  dup1
-  16 shr
-  or
-
-  01 add    // v++
-}
 
 #define macro MSB = takes(1) returns(1) {
   dup1
@@ -64,7 +48,6 @@ loop:                   // 174
   swap2           // 
   loop jumpi
 
-  //pop NEXT_POWER_OF_TWO()  // 195
   pop NEXT_MULTIPLE_OF_EIGHT() // 195
   //128 add                      // 206
   8 swap1 div
@@ -82,9 +65,6 @@ is_zero2: // this should be somewhere else
 #define macro T = takes(0) returns (0) {
   64 MSB()
 }
-
-
-//#define macro STEP_1 = takes(
 
 
 #define macro POW = takes(2) returns(1) {
@@ -121,12 +101,12 @@ end:
 #define macro DIV384 = takes(0) returns(0) {
 
 // x (dividend) = 721948327 - MSB = 44
-0x0000000000000000000000000000000000000000000000000000000000000000 0x00 mstore  // LIMB 1 - MSB = 
-0x0000000000000000000000002b080ea700000000000000000000000000000000 0x20 mstore  // LIMB 2 - MSB = 12 + 32 = 44
+0x0000000000000000000000000000000000000000000000000000000000000000 X_OFFSET_00() mstore  // LIMB 1 - MSB = 
+0x0000000000000000000000002b080ea700000000000000000000000000000000 X_OFFSET_01() mstore  // LIMB 2 - MSB = 12 + 32 = 44
 //                                |
 // y (divisor) = 84461
-0x0000000000000000000000000000000000000000000000000000000000000000 0x40 mstore  // LIMB 1
-0x000000000000000000000000000149ed00000000000000000000000000000000 0x60 mstore  // LIMB 2 - MSB = 13 + 32 = 45
+0x0000000000000000000000000000000000000000000000000000000000000000 Y_OFFSET_00() mstore  // LIMB 1
+0x000000000000000000000000000149ed00000000000000000000000000000000 Y_OFFSET_01() mstore  // LIMB 2 - MSB = 13 + 32 = 45
 //                                |
 
 

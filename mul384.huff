@@ -1,0 +1,38 @@
+#define macro MUL384 = takes(1) returns(1) {
+  // https://notes.ethereum.org/6miRlBALTharEA_HTKvTWA#mul384
+
+  // Takes one stack element containing the offsets corresponding to the
+  // memory locations of $a$ and $b$.
+
+  // Get element $a$ offset:
+  dup1     // 0177
+  //00000000000000000000000000000040 00000000000000000000000000000000
+  120 shl
+  128 shr
+
+  // TODO: next 192-bit from memory
+
+  // Get element $b$ offfset:
+  swap1    // 0184
+  dup1
+  128 shl
+  128 shr
+
+  mload
+  swap1
+  32 add
+  mload
+  
+  // mul384:u384*u384->u768
+  // 1. Break both input values up into pairs of 192-bit limbs using bit shifts
+  
+  
+  // 2. Do four mulmodmont384 with mod=0,inv=0 over pairs of these 192-bit limbs
+  
+  
+  // 3. Add the resulting four 384-bit values. But we need add-with-carry, so we
+  //    might have to break each of those four 384-bit values into 192-bit limbs
+  //    (using shifts) and do six add384s, and shifts to isolate the carry bit twice.
+  
+  // 4. Concatenate the resulting 192-bit limbs together using shifts.
+}

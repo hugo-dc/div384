@@ -1,0 +1,33 @@
+#define macro NEXT_POWER_OF_TWO = takes(1) returns(1) {
+  // Calculate next power of 2
+  // Algorithm from:
+  // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+  01 swap1 sub  // v--
+  dup1
+
+  // v = v | v >> 1
+  01 shr
+  or
+
+  // v = v | v >> 2
+  dup1
+  02 shr
+  or
+
+  // v = v | v >> 4
+  dup1
+  04 shr
+  or
+
+  // v = v | v >> 8
+  dup1
+  08 shr
+  or
+
+  // v = v | v >> 16
+  dup1
+  16 shr
+  or
+
+  01 add    // v++
+}

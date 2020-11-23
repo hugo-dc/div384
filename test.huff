@@ -1,0 +1,32 @@
+#include "mul384.huff"
+
+#define macro A_OFFSET_00 = takes(0) returns(1) {
+  00
+}
+
+#define macro A_OFFSET_01 = takes(0) returns(1) {
+  32
+}
+
+#define macro B_OFFSET_00 = takes(0) returns(1) {
+  64
+}
+
+#define macro B_OFFSET_01 = takes(0) returns(1) {
+  96
+}
+
+#define macro TEST = takes(0) returns(0) {
+  // element $a$ - 84461
+  0x0000000000000000000000000000000000000000000000000000000000000000 A_OFFSET_00() mstore
+  0x000000000000000000000000000149ed00000000000000000000000000000000 A_OFFSET_01() mstore
+
+  // element $b$ - 16
+  0x0000000000000000000000000000000000000000000000000000000000000000 B_OFFSET_00() mstore
+  0x0000000000000000000000000000001000000000000000000000000000000000 B_OFFSET_01() mstore
+
+  // one stack element containing the offsets of $a$ and $b$
+  //              16               |
+  0x0000000000000000000000000000000000000000000000000000000000000040
+  MUL384()
+}
