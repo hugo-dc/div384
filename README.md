@@ -1,3 +1,32 @@
+# div384
+
+This is an implementation of div384, it also includes mul384.
+
+## mul384
+
+mul384 is implemented according to [this
+specification](https://notes.ethereum.org/6miRlBALTharEA_HTKvTWA#mul384)
+
+It can produce a result o 768 bytes.
+
+### Interface
+
+Receives 3 offsets:
+
+- `out`
+- `x`
+. `y`
+
+
+These 3 offsets are packed in a 32 bytes element in the stack, each offset
+ocuppying 4 bytes (leaving the last one empty/zeroed).
+
+The `output` offset expects to have 768 free bits to put the results.
+
+The `x` and `y` offsets corresponds to a part of memory storing 384 bits for
+each element.
+
+
 A generator for huff code for parts of BLS12-381 pairing.
 
 # Files
