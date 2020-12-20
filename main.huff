@@ -12,7 +12,8 @@ template<val>
 ///////////////
 // test
 
-#define macro MILLER_LOOP_TEST_HARDCODED = takes(0) returns(0) {
+//#define macro MILLER_LOOP_TEST_HARDCODED = takes(0) returns(0) {
+#define macro MAIN = takes(0) returns(0) {
 
   // set up memory
 

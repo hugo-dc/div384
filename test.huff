@@ -1,32 +1,61 @@
 #include "mul384.huff"
 
-#define macro A_OFFSET_00 = takes(0) returns(1) {
+#define macro RESULT_OFFSET_00 = takes(0) returns(1) {
   00
 }
 
-#define macro A_OFFSET_01 = takes(0) returns(1) {
+#define macro RESULT_OFFSET_01 = takes(0) returns(1) {
   32
 }
 
-#define macro B_OFFSET_00 = takes(0) returns(1) {
+#define macro RESULT_OFFSET_02 = takes(0) returns(1) {
   64
 }
 
-#define macro B_OFFSET_01 = takes(0) returns(1) {
+#define macro RESULT_OFFSET_03 = takes(0) returns(1) {
   96
+}
+
+#define macro A_OFFSET_00 = takes(0) returns(1) {
+  128
+}
+
+#define macro A_OFFSET_01 = takes(0) returns(1) {
+  160
+}
+
+#define macro B_OFFSET_00 = takes(0) returns(1) {
+  192
+}
+
+#define macro B_OFFSET_01 = takes(0) returns(1) {
+  224
 }
 
 #define macro TEST = takes(0) returns(0) {
   // element $a$ - 84461
-  0x0000000000000000000000000000000000000000000000000000000000000000 A_OFFSET_00() mstore
-  0x000000000000000000000000000149ed00000000000000000000000000000000 A_OFFSET_01() mstore
+//                   1                   2                   3
+// 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 
+0x0000000000000000000000000000000000000000000000000000000000000000 A_OFFSET_00() mstore  // 32
+//0000000000000000000000000000000000000000000149ed0000000000000000
+0x000000000000000000000000000149ed00000000000000000000000000000000 A_OFFSET_01() mstore  // 16
 
   // element $b$ - 16
   0x0000000000000000000000000000000000000000000000000000000000000000 B_OFFSET_00() mstore
   0x0000000000000000000000000000001000000000000000000000000000000000 B_OFFSET_01() mstore
 
-  // one stack element containing the offsets of $a$ and $b$
-  //              16               |
-  0x0000000000000000000000000000000000000000000000000000000000000040 // 0144
-  MUL384()
+  // output offset: 0x00
+  // x offset: 0x80
+  // y offset: 0xc0
+  //       |       |       |       |       |       |       |       |
+  0x00000000000000000000000000000000000000000000000000000080000000c0 MUL384()
+  
+  // one stack element containing the offsets of result $a$ and $b$
+  //       |       |       |       |  out  |   x   |    y  |mod_inv|
+  //       |       |       |       |       |       |       |       |
+//0x0000000100000002000000030000000400000005000000060000000700000008 mulmodmont384 // 0144
+//0x000000000000000000000000000000000000000000000080000000c000000000 mulmodmont384 // 0144
+
+
+  //MUL384()
 }
